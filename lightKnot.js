@@ -1,24 +1,15 @@
 #!/usr/local/bin/node
 
 /*
- *
  * todo
  * - prio buffers allways have transparency
  * - completely disconnect wall drawing from bufferupdates (async) 
  * - throttle all connections to max wall speed
- *
- *
- *
- *
- *
- *
- *
- *
- *
  */
 
 var colors = require('colors');
 var fs = require('fs');
+
 var myFile = process.argv[1];
 fs.watch(myFile, function (event, filename) {
 	console.log('file event : terminate ' + event);
@@ -37,6 +28,8 @@ var wallConn = require('./wallConnection.js');
 
 
 {
+	console.log("Welcome to lightKnot".bold + " - Serving LED walls and lights since 2012");
+
 	//var serialDevice1 = '/dev/cu.usbserial-A8008I0K';
 	var serialDevice1 = '/dev/ttyUSB0';
 	//var serialDevice1 = '/dev/cu.usbserial-A100DDXG';
@@ -44,8 +37,8 @@ var wallConn = require('./wallConnection.js');
 		
 	var hardwareAvailable = true;
 
-	console.log("Welcome to lightKnot".bold + " Serving LED walls and lights since 2012");
-	
+
+	//TODO iterate over an array of serial device candidates using a for loop with break
 
 
 	try{
@@ -57,7 +50,7 @@ var wallConn = require('./wallConnection.js');
 //		});
 	} catch(e) {
 		hardwareAvailable = false;
-		console.log(("hardware on " + serialDevice1 + "not found - running without hardware").yellow );
+		console.log(("hardware not found on " + serialDevice1 + " - running without hardware").yellow );
 		
 		setInterval(function(){
 			fs.lstat(serialDevice1,function(err,stats){
@@ -70,11 +63,11 @@ var wallConn = require('./wallConnection.js');
 		},5000);
 	}
 
-	var connectionCeil = new wallConn.newConn(hardwareAvailable,serialDevice1,500000);
+	var dataInjectorConnection = new wallConn.newConn(hardwareAvailable,serialDevice1,500000);
 
-	var pentawallHD = wall.newWall('PentawallHD',connectionCeil);
-	var ceilingLED = wall.newWall('CeilingLED',connectionCeil);
-	var ceilingLED = wall.newWall('Ledbar',connectionCeil);
+	var pentawallHD = wall.newWall('PentawallHD',dataInjectorConnection);
+	var ceilingLED = wall.newWall('CeilingLED',dataInjectorConnection);
+	var ceilingLED = wall.newWall('Ledbar',dataInjectorConnection);
 }
 
 

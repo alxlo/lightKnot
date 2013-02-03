@@ -3,6 +3,7 @@ var fs = require('fs');
 var util = require("util");
 var os = require('os');
 var path = require('path');
+var static = require('node-static'); // for serving files
 require('buffertools');
 require('pentawalltools');
 
@@ -719,11 +720,30 @@ exports.newWall = function(wallType,wall) {
 	var ioSockets = {};
 	var ioSocketIdCtr = 0;
 
-	var httpSrv = require('http').createServer(handler);
+
+
+
+
+
+
+
+
+
+
+
+
+
+	var myFileServer = new(static.Server)('./webgui');
+
+	var httpSrv = 	require('http').createServer(function (request, response) {
+					    request.addListener('end', function () {
+					        // serve a file
+					        myFileServer.serve(request, response);
+					    });
+					}).listen(configuration.tcpPort+1000,'::');
 
 
 	var io = require('socket.io').listen(httpSrv);
-	httpSrv.listen(configuration.tcpPort+1000,'::');
 
 	io.set('log level', 1); 
 	io.enable('browser client minification');  // send minified client
@@ -737,28 +757,6 @@ exports.newWall = function(wallType,wall) {
 		, 'jsonp-polling'
 	]);
 
-	function handler (req, res) {
-		
-		
-		var myurl = (req.url=='/')|(req.url=='') ? 'io.html' : req.url; 
-		var filename = path.join(__dirname,'/webgui',myurl);
-
-		if (filename.indexOf(__dirname) !== 0) {
-				res.writeHead(500);
-				return res.end('Error - request not in webroot');
-  		}
-
-		fs.readFile(filename,
-		function (err, data) {
-			if (err) {
-				res.writeHead(500);
-				return res.end('Error loading ' + req.url);
-			}
-
-			res.writeHead(200);
-			res.end(data);
-		});
-	}
 
 	io.sockets.on('connection', function (socket) {
 
