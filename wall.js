@@ -721,20 +721,10 @@ exports.newWall = function(wallType,wall) {
 	var ioSocketIdCtr = 0;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+	// a file server that plugs into our webserver
 	var myFileServer = new(static.Server)('./webgui');
 
+	// new HTTP Server that defaults to serving files from the './webgui' directory
 	var httpSrv = 	require('http').createServer(function (request, response) {
 					    request.addListener('end', function () {
 					        // serve a file
