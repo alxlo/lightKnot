@@ -35,4 +35,11 @@ also prodvides a preview website, like this one : http://bender.hq.c3d2.de:2340 
 - 09 subscribe to message channel
 - 0a sent message to channel
 
+## 3rd Party Libraries / Credits
 
+lightKnot makes use of the follwoing 3rd party libraries, frameworks or components and includes the respective source code in its source tree:
+ 
+ * [jQuery](http://jquery.com/) (MIT License)
+ * [farbtastic color picker](http://acko.net/blog/farbtastic-jquery-color-picker-plug-in/) (GPL)
+
+Many thanks to the contributors and for the generosity and common sense of sharing code under a free software license.
