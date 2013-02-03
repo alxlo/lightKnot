@@ -17,7 +17,7 @@
  *
  */
 
-
+var colors = require('colors');
 var fs = require('fs');
 var myFile = process.argv[1];
 fs.watch(myFile, function (event, filename) {
@@ -44,6 +44,9 @@ var wallConn = require('./wallConnection.js');
 		
 	var hardwareAvailable = true;
 
+	console.log("Welcome to lightKnot".bold + " Serving LED walls and lights since 2012");
+	
+
 
 	try{
 		var stats = fs.lstatSync(serialDevice1);
@@ -54,7 +57,7 @@ var wallConn = require('./wallConnection.js');
 //		});
 	} catch(e) {
 		hardwareAvailable = false;
-		console.log("hardware on " + serialDevice1 + "not found - running without hardware");
+		console.log(("hardware on " + serialDevice1 + "not found - running without hardware").yellow );
 		
 		setInterval(function(){
 			fs.lstat(serialDevice1,function(err,stats){
