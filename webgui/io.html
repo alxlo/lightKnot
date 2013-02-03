@@ -3,12 +3,47 @@
 		<title>Pentawall Live Image</title>
 
 		<script src="/socket.io/socket.io.js?a"></script>
+		<script type="text/javascript" src="lib/jquery-1.9.0.min.js"></script> 
+		<script type="text/javascript" src="lib/farbtastic/farbtastic.js"></script>
+ 		<link rel="stylesheet" href="lib/farbtastic/farbtastic.css" type="text/css" />
 
-		<script>
+		<script type="text/javascript" charset="utf-8">
+
+			//start color picker
+  			$(document).ready(function() {
+    			//$('#picker').$farbtastic(colorChanged(color));
+    			//$('#picker').farbtastic('#color');
+    			$('#picker').farbtastic(function(color){
+    					colorChanged(color);
+    			});
+    			//$(...).farbtastic() $(...).farbtastic(callback)
+    		  });
+
 
 			function setBackgroundImage(configuration) {
-				document.getElementById('bdy').style.backgroundImage = "url('background_"+configuration.name+".jpg')";
+				//$('body').style.backgroundImage = "url('background_"+configuration.name+".jpg')";
+				$('body').css("background-image", "url('background_"+configuration.name+".jpg')");
+				
 			}
+
+			var socket = io.connect('http://'+window.location.hostname+':'+window.location.port);
+			
+
+
+			function colorChanged(color){
+
+				//alert('hello');
+				var myPixel = {
+					addr    : 0xF0,
+					r 		: parseInt(color.substr(1,2),16),
+					g 		: parseInt(color.substr(3,2),16),
+					b 		: parseInt(color.substr(5,2),16),
+					w 		: 0x00,
+				};
+				socket.emit('setPixel', myPixel);
+				//socket.emit('setPixel', color);
+
+			};
 
 			function onLoad(){
 
@@ -17,7 +52,7 @@
 				var canvasCeilEl = document.getElementById("canvasCeil");
 				var canvasCeil = canvasCeilEl.getContext("2d");
 
-				var socket = io.connect('http://'+window.location.hostname+':'+window.location.port);
+				
 
 				socket.on('disconnect', function () {
 				
@@ -225,7 +260,7 @@
 
 	</head>
 
-	<body style="background-color:#404090;background-repeat:no-repeat;" onload="onLoad()" id="bdy">
+	<body style="background-color:#404090;background-repeat:no-repeat;" onload="onLoad()">
 	
 		<div id="message1"></div>
 		<div id="message2"></div>
@@ -236,6 +271,17 @@
 			<canvas id="canvas1" width="300" height="300"  style="margin-left:250px;padding-top:260px"></canvas>
 			<br/>
 			<canvas id="canvasCeil" width="250" height="400"  style="margin-left:10px;padding-top:100px"></canvas>
+		</div>
+		<div style="position:absolute;top:0px;left:400px;">
+			<form action="" style="width: 400px;">
+	  			<div class="form-item">
+	  				<label for="color">Color:</label>
+	  					<input type="text" id="color" name="color" value="#123456" />
+	  				</div>
+	  			<div id="picker"></div>
+			</form>
+			<p>More info on <a href="http://www.acko.net/dev/farbtastic">Acko.net</a>.</p>
+			<p>Created by <a href="http://www.acko.net/">Steven Wittens</a>.</p>
 		</div>
 	</body>
 </html>

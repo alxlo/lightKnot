@@ -2,6 +2,7 @@ var net = require('net');
 var fs = require('fs');
 var util = require("util");
 var os = require('os');
+var path = require('path');
 require('buffertools');
 require('pentawalltools');
 
@@ -159,11 +160,6 @@ exports.newWall = function(wallType,wall) {
 							ceilBuffers[currentPrio][3+i*4]);
 				}
 
-/*				wall.setCeiling(0xf1,ceilBuffers[currentPrio][0],ceilBuffers[currentPrio][1],ceilBuffers[currentPrio][2],ceilBuffers[currentPrio][3]);
-				wall.setCeiling(0xf2,ceilBuffers[currentPrio][4],ceilBuffers[currentPrio][5],ceilBuffers[currentPrio][6],ceilBuffers[currentPrio][7]);
-				wall.setCeiling(0xf3,ceilBuffers[currentPrio][8],ceilBuffers[currentPrio][9],ceilBuffers[currentPrio][10],ceilBuffers[currentPrio][11]);
-				wall.setCeiling(0xf4,ceilBuffers[currentPrio][12],ceilBuffers[currentPrio][13],ceilBuffers[currentPrio][14],ceilBuffers[currentPrio][15]);
-				wall.setCeiling(0xf5,ceilBuffers[currentPrio][16],ceilBuffers[currentPrio][17],ceilBuffers[currentPrio][18],ceilBuffers[currentPrio][19]);*/
 			}
 			else
 			{
@@ -173,6 +169,64 @@ exports.newWall = function(wallType,wall) {
 
 
 	}
+
+	//
+	// setting a single ceiling pixel (or all if broadcast)
+	//
+	function setCeilPixel(addr, r,g,b,w, myPrio, callback, socket) {
+
+		// at first we write stuff to the buffers
+		// (for recording and restoring after Prio changes					
+
+		if(addr == configuration.baseAddress){ // this is for all leds (0xD0 or 0xF0)
+			
+			for (var i=0;i<configuration.width;i++){
+				ceilBuffers[myPrio][i*4+0] = r;  //red  yes, red, indeed ;-)
+				ceilBuffers[myPrio][i*4+1] = g;  //green
+				ceilBuffers[myPrio][i*4+2] = b;  //blue
+				ceilBuffers[myPrio][i*4+3] = w;  //white
+			}
+				
+		}else{
+			//
+			// ########### This is for one specific led ###########################
+			//
+			ceilBuffers[myPrio][(addr-configuration.baseAddress-1)*4] = r; //red
+			ceilBuffers[myPrio][(addr-configuration.baseAddress-1)*4+1] = g; //green
+			ceilBuffers[myPrio][(addr-configuration.baseAddress-1)*4+2] = b; //blue
+			ceilBuffers[myPrio][(addr-configuration.baseAddress-1)*4+3] = w; //white
+		}
+		
+		lastCeilFrame = null;
+
+
+		// if we have control of the wall we write the comman to the bus
+		// for this we dont need to make a distinction wheter the command
+		// is for all pixels or for a single pixel
+		if(myPrio >= currentPrio){
+			wall.setCeiling(addr,r,g,b,w, callback, socket);
+			if(currentRecFd){
+				
+				var buf = new Buffer([addr,r,g,b, w]);
+				var strBuf = new Buffer(buf.toString('hex'));
+
+				if(currentRecStarted == null){
+					currentRecStarted = Date.now();
+				};
+			
+				fs.writeSync(currentRecFd,parseInt(Date.now()-currentRecStarted,10)+" 02",null);
+				
+				fs.writeSync(currentRecFd,strBuf,0,strBuf.length,null);
+				fs.writeSync(currentRecFd,"\r\n",null);
+			}
+			return;
+		}
+		if(callback){
+			callback('ok');
+		}
+		return;
+	} //end function setCeilPixel(r,g,b,w, myPrio, callback)
+
 
 	function processPacket(data,connectionId,callback,socket)
 	{
@@ -335,60 +389,9 @@ exports.newWall = function(wallType,wall) {
 					//
 					// ########## this one is for a LED strip (CeilingLEDs) ########## 
 					//
-						
+					setCeilPixel(x,y,r,g,b,myPrio,callback,socket);
+					return;
 
-
-					// at first we write stuff to the buffers
-					// (for recording and restoring after Prio changes					
-			
-					if(x == configuration.baseAddress){ // this is for all leds (0xD0 or 0xF0)
-						
-						//ceilBuffers[myPrio] = new Buffer(configuration.width*4);
-						for (var i=0;i<configuration.width;i++){
-							ceilBuffers[myPrio][i*4+0] = y;  //red  yes, red, indeed ;-)
-							ceilBuffers[myPrio][i*4+1] = r;  //green
-							ceilBuffers[myPrio][i*4+2] = g;  //blue
-							ceilBuffers[myPrio][i*4+3] = b;  //white
-						}
-							
-						//ceilBuffers[myPrio] = new Buffer([y,r,g,b,y,r,g,b,y,r,g,b,y,r,g,b,y,r,g,b]);
-					}else{
-						//
-						// ########### This is for one specific led ###########################
-						//
-						ceilBuffers[myPrio][(x-configuration.baseAddress-1)*4] = y; //red
-						ceilBuffers[myPrio][(x-configuration.baseAddress-1)*4+1] = r; //green
-						ceilBuffers[myPrio][(x-configuration.baseAddress-1)*4+2] = g; //blue
-						ceilBuffers[myPrio][(x-configuration.baseAddress-1)*4+3] = b; //white
-					}
-					
-					lastCeilFrame = null;
-
-
-					// if we have control of the wall we write the comman to the bus
-					// for this we dont need to make a distinction wheter the command
-					// is for all pixels or for a single pixel
-					if(myPrio >= currentPrio){
-						wall.setCeiling(x,y,r,g,b,callback,socket);
-						if(currentRecFd){
-							
-							var buf = new Buffer([x,y,r,g,b]);
-							var strBuf = new Buffer(buf.toString('hex'));
-
-							if(currentRecStarted == null){
-								currentRecStarted = Date.now();
-							};
-						
-							fs.writeSync(currentRecFd,parseInt(Date.now()-currentRecStarted,10)+" 02",null);
-							
-							fs.writeSync(currentRecFd,strBuf,0,strBuf.length,null);
-							fs.writeSync(currentRecFd,"\r\n",null);
-						}
-						return;
-					}else{
-						return callback('ok');
-					}
-				
 				}else{
 					return callback('bad')
 				}
@@ -736,18 +739,20 @@ exports.newWall = function(wallType,wall) {
 
 	function handler (req, res) {
 		
-		var filename = '/io.html';
+		
+		var myurl = (req.url=='/')|(req.url=='') ? 'io.html' : req.url; 
+		var filename = path.join(__dirname,'/webgui',myurl);
 
-		if(req.url == '/background_'+configuration.name+'.jpg')
-		{
-			filename = req.url;
-		}
+		if (filename.indexOf(__dirname) !== 0) {
+				res.writeHead(500);
+				return res.end('Error - request not in webroot');
+  		}
 
-		fs.readFile(__dirname + '/webgui' + filename,
+		fs.readFile(filename,
 		function (err, data) {
 			if (err) {
 				res.writeHead(500);
-				return res.end('Error loading /webgui' + filename);
+				return res.end('Error loading ' + req.url);
 			}
 
 			res.writeHead(200);
@@ -775,6 +780,11 @@ exports.newWall = function(wallType,wall) {
 		});
 
 		socket.emit('init',configuration);
+
+		socket.on('setPixel', function (pixel) {
+			setCeilPixel(pixel.addr,pixel.r,pixel.g,pixel.b,pixel.w,0);
+
+  		});
 
 	});
 
